@@ -30,19 +30,11 @@ namespace Core
             get { return !(this.currentFrame > this.transitionFrames); }
         }
 
-        public static bool CanMoveToNewPosition(Vector3 origin, Vector3 newPosition, int maxMoveDistance)
-        {
-            Vector3 positionDelta = newPosition - origin;
-            int movesFromOriginalPosition = (int)Mathf.Abs(positionDelta.x) + (int)Mathf.Abs(positionDelta.y);
-            return movesFromOriginalPosition <= maxMoveDistance;
-        }
-
+        #region MonoBehaviour
         private void Start()
         {
             // This logic should go into "start of unit's move turn", but this'll do for now
             this.originalPosition = this.gameObject.transform.position;
-
-            FindObjectOfType<MovementVisualizer>().CurrentActor = this;
         }
 
         private void Update()
@@ -70,6 +62,19 @@ namespace Core
                 }
             }
         }
+        #endregion
+
+        public static bool CanMoveToNewPosition(Vector3 origin, Vector3 newPosition, int maxMoveDistance)
+        {
+            Vector3 positionDelta = newPosition - origin;
+            int movesFromOriginalPosition = (int)Mathf.Abs(positionDelta.x) + (int)Mathf.Abs(positionDelta.y);
+            return movesFromOriginalPosition <= maxMoveDistance;
+        }
+
+        public void SetCurrentPositionAsNew()
+        {
+            this.originalPosition = this.transform.position;
+        }
 
         private Vector3 QueryMovementDelta()
         {
@@ -93,6 +98,5 @@ namespace Core
             }
             return moveVector;
         }
-
     }
 }

@@ -25,10 +25,26 @@ namespace Core
 
         private List<GameObject> currentMarkers = null;
 
+        #region MonoBehaviour
         private void Awake()
         {
             currentMarkers = new List<GameObject>();
         }
+
+        private void Start()
+        {
+            SystemsController.Instance.Turns.TurnStarted += OnTurnStarted;
+        }
+        #endregion
+
+        #region Event Handlers
+        private void OnTurnStarted(Unit unit)
+        {
+            this.CurrentActor = unit.GetComponent<Movement>();
+            ClearExistingMoveMarkers();
+            UpdateVisuals();
+        }
+        #endregion
 
         private void UpdateVisuals()
         {
