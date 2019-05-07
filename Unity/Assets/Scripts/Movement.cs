@@ -24,10 +24,11 @@ namespace Core
         private Vector3 startPosition;
         private Vector3 endPosition;
         private int currentFrame = 0;
+        private bool myTurn = false;
 
         private bool IsCurrentlyMoving
         {
-            get { return !(this.currentFrame > this.transitionFrames); }
+            get { return this.currentFrame <= this.transitionFrames; }
         }
 
         #region MonoBehaviour
@@ -35,10 +36,16 @@ namespace Core
         {
             // This logic should go into "start of unit's move turn", but this'll do for now
             this.originalPosition = this.gameObject.transform.position;
+            this.currentFrame = this.transitionFrames + 1;
         }
 
         private void Update()
         {
+            if (!this.myTurn)
+            {
+                return;
+            }
+
             // Check to see we are currently moving
             if (this.IsCurrentlyMoving)
             {
@@ -71,9 +78,16 @@ namespace Core
             return movesFromOriginalPosition <= maxMoveDistance;
         }
 
-        public void SetCurrentPositionAsNew()
+        public void StartTurn()
+        {
+            this.myTurn = true;
+        }
+
+        public void EndTurn()
         {
             this.originalPosition = this.transform.position;
+
+            this.myTurn = false;
         }
 
         private Vector3 QueryMovementDelta()

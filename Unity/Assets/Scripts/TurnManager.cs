@@ -30,12 +30,22 @@ namespace Core
             this.totalTurns = 0;
             this.totalTurnCycles = 0;
         }
+
+        private void Start()
+        {
+            StartTurn();
+        }
         #endregion
 
         public void EndTurn(Unit unit)
         {
             TurnEnded?.Invoke(this.CurrentUnit);
             NextTurn();
+        }
+
+        private void StartTurn()
+        {
+            this.CurrentUnit.StartTurn();
             TurnStarted?.Invoke(this.CurrentUnit);
         }
 
@@ -52,6 +62,8 @@ namespace Core
                 NewCycleStarted?.Invoke(this.totalTurnCycles);
                 Debug.Log("[TurnManager] NextTurn : New cycle started");
             }
+
+            StartTurn();
         }
     }
 }
