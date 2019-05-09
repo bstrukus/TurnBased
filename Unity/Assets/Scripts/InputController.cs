@@ -11,5 +11,13 @@ namespace Core
     public class InputController : MonoBehaviour
     {
         public Action<KeyCode> OnKeyDown;
+
+
+        #region MonoBehaviour
+        private void Update()
+        {
+            
+        }
+        #endregion
     }
 }
