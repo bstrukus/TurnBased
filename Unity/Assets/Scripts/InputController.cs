@@ -13,6 +13,7 @@ namespace Core
         public Action<Vector3> MovementTriggered;
         public Action TurnEnd;
         public Action PositionReset;
+        public Action ActionTriggered;
 
 
         #region MonoBehaviour
@@ -26,6 +27,11 @@ namespace Core
             if (Input.GetKeyDown(KeyCode.Home))
             {
                 PositionReset?.Invoke();
+            }
+
+            if (Input.GetKeyDown(KeyCode.RightControl))
+            {
+                ActionTriggered?.Invoke();
             }
 
             Vector3 movementVector = Vector3.zero;

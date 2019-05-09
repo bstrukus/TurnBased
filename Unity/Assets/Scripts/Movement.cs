@@ -2,6 +2,7 @@
  * Ben's TurnBased Strategy Game
  */
 
+using System.Collections;
 using UnityEngine;
 
 namespace Core
@@ -24,7 +25,8 @@ namespace Core
         private Vector3 startPosition;
         private Vector3 endPosition;
         private int currentFrame = 0;
-        private bool myTurn = false;
+
+        private Coroutine moveCoroutine = null;
 
         private bool IsCurrentlyMoving
         {
@@ -35,22 +37,8 @@ namespace Core
         private void Start()
         {
             // This logic should go into "start of unit's move turn", but this'll do for now
-            this.originalPosition = this.gameObject.transform.position;
+            this.originalPosition = this.transform.position;
             this.currentFrame = this.transitionFrames + 1;
-        }
-
-        private void Update()
-        {
-            // Check to see we are currently moving
-            if (this.IsCurrentlyMoving)
-            {
-                float transitionDelta = (float)currentFrame / this.transitionFrames;
-                this.gameObject.transform.position = Vector3.Lerp(this.startPosition, this.endPosition, transitionDelta);
-                ++currentFrame;
-            }
-            else if (Input.GetKeyDown(KeyCode.Home))
-            {
-            }
         }
         #endregion
 
@@ -63,8 +51,6 @@ namespace Core
 
         public void StartTurn()
         {
-            this.myTurn = true;
-
             SystemsController.Instance.Input.MovementTriggered += OnMovementTriggered;
             SystemsController.Instance.Input.PositionReset += OnPositionReset;
         }
@@ -73,16 +59,26 @@ namespace Core
         {
             this.originalPosition = this.transform.position;
 
-            this.myTurn = false;
-
             SystemsController.Instance.Input.MovementTriggered -= OnMovementTriggered;
             SystemsController.Instance.Input.PositionReset -= OnPositionReset;
         }
 
+        private IEnumerator Move()
+        {
+            for (int i = 0; i < (this.transitionFrames + 1); ++i)
+            {
+                float transitionDelta = (float)i / this.transitionFrames;
+                this.transform.position = Vector3.Lerp(this.startPosition, this.endPosition, transitionDelta);
+                yield return null;
+            }
+            this.moveCoroutine = null;
+        }
+
+
         #region Event Handlers
         private void OnMovementTriggered(Vector3 movementVector)
         {
-            if (this.IsCurrentlyMoving)
+            if (this.moveCoroutine != null)
             {
                 return;
             }
@@ -94,11 +90,13 @@ namespace Core
                 this.endPosition = this.startPosition + movementDelta;
                 this.currentFrame = 0;
             }
+
+            this.moveCoroutine = StartCoroutine(Move());
         }
 
         private void OnPositionReset()
         {
-            this.gameObject.transform.position = this.originalPosition;
+            this.transform.position = this.originalPosition;
         }
         #endregion  
     }
