@@ -2,6 +2,7 @@
  * Ben's TurnBased Strategy Game
  */
 
+using System.Collections;
 using UnityEngine;
 
 namespace Core
@@ -24,7 +25,8 @@ namespace Core
         private Vector3 startPosition;
         private Vector3 endPosition;
         private int currentFrame = 0;
-        private bool myTurn = false;
+
+        private Coroutine moveCoroutine = null;
 
         private bool IsCurrentlyMoving
         {
@@ -35,39 +37,8 @@ namespace Core
         private void Start()
         {
             // This logic should go into "start of unit's move turn", but this'll do for now
-            this.originalPosition = this.gameObject.transform.position;
+            this.originalPosition = this.transform.position;
             this.currentFrame = this.transitionFrames + 1;
-        }
-
-        private void Update()
-        {
-            if (!this.myTurn)
-            {
-                return;
-            }
-
-            // Check to see we are currently moving
-            if (this.IsCurrentlyMoving)
-            {
-                float transitionDelta = (float)currentFrame / this.transitionFrames;
-                this.gameObject.transform.position = Vector3.Lerp(this.startPosition, this.endPosition, transitionDelta);
-                ++currentFrame;
-            }
-            else if (Input.GetKeyDown(KeyCode.Home))
-            {
-                this.gameObject.transform.position = this.originalPosition;
-            }
-            else
-            {
-                // Check to see if we've been commanded to move
-                Vector3 movementDelta = QueryMovementDelta();
-                this.startPosition = this.gameObject.transform.position;
-                if (movementDelta != Vector3.zero && CanMoveToNewPosition(this.originalPosition, movementDelta + this.startPosition, this.UnitMoveDistance))
-                {
-                    this.endPosition = this.startPosition + movementDelta;
-                    this.currentFrame = 0;
-                }
-            }
         }
         #endregion
 
@@ -80,37 +51,53 @@ namespace Core
 
         public void StartTurn()
         {
-            this.myTurn = true;
+            SystemsController.Instance.Input.MovementTriggered += OnMovementTriggered;
+            SystemsController.Instance.Input.PositionReset += OnPositionReset;
         }
 
         public void EndTurn()
         {
             this.originalPosition = this.transform.position;
 
-            this.myTurn = false;
+            SystemsController.Instance.Input.MovementTriggered -= OnMovementTriggered;
+            SystemsController.Instance.Input.PositionReset -= OnPositionReset;
         }
 
-        private Vector3 QueryMovementDelta()
+        private IEnumerator Move()
         {
-            // #idea Have a base InputControler class that listens for these key events and create a new Moveable(?) class that listens to the events and responds!
-            Vector3 moveVector = Vector3.zero;
-            if (Input.GetKeyDown(KeyCode.UpArrow))
+            for (int i = 0; i < (this.transitionFrames + 1); ++i)
             {
-                moveVector.y = this.moveDelta;
+                float transitionDelta = (float)i / this.transitionFrames;
+                this.transform.position = Vector3.Lerp(this.startPosition, this.endPosition, transitionDelta);
+                yield return null;
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                moveVector.y = -this.moveDelta;
-            }
-            else if (Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                moveVector.x = -this.moveDelta;
-            }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                moveVector.x = this.moveDelta;
-            }
-            return moveVector;
+            this.moveCoroutine = null;
         }
+
+
+        #region Event Handlers
+        private void OnMovementTriggered(Vector3 movementVector)
+        {
+            if (this.moveCoroutine != null)
+            {
+                return;
+            }
+
+            Vector3 movementDelta = movementVector * this.moveDelta;
+            this.startPosition = this.gameObject.transform.position;
+            if (CanMoveToNewPosition(this.originalPosition, movementDelta + this.startPosition, this.UnitMoveDistance))
+            {
+                this.endPosition = this.startPosition + movementDelta;
+                this.currentFrame = 0;
+            }
+
+            this.moveCoroutine = StartCoroutine(Move());
+        }
+
+        private void OnPositionReset()
+        {
+            this.transform.position = this.originalPosition;
+        }
+        #endregion  
     }
 }
