@@ -41,11 +41,6 @@ namespace Core
 
         private void Update()
         {
-            if (!this.myTurn)
-            {
-                return;
-            }
-
             // Check to see we are currently moving
             if (this.IsCurrentlyMoving)
             {
@@ -55,18 +50,6 @@ namespace Core
             }
             else if (Input.GetKeyDown(KeyCode.Home))
             {
-                this.gameObject.transform.position = this.originalPosition;
-            }
-            else
-            {
-                // Check to see if we've been commanded to move
-                Vector3 movementDelta = QueryMovementDelta();
-                this.startPosition = this.gameObject.transform.position;
-                if (movementDelta != Vector3.zero && CanMoveToNewPosition(this.originalPosition, movementDelta + this.startPosition, this.UnitMoveDistance))
-                {
-                    this.endPosition = this.startPosition + movementDelta;
-                    this.currentFrame = 0;
-                }
             }
         }
         #endregion
@@ -81,6 +64,9 @@ namespace Core
         public void StartTurn()
         {
             this.myTurn = true;
+
+            SystemsController.Instance.Input.MovementTriggered += OnMovementTriggered;
+            SystemsController.Instance.Input.PositionReset += OnPositionReset;
         }
 
         public void EndTurn()
@@ -88,29 +74,32 @@ namespace Core
             this.originalPosition = this.transform.position;
 
             this.myTurn = false;
+
+            SystemsController.Instance.Input.MovementTriggered -= OnMovementTriggered;
+            SystemsController.Instance.Input.PositionReset -= OnPositionReset;
         }
 
-        private Vector3 QueryMovementDelta()
+        #region Event Handlers
+        private void OnMovementTriggered(Vector3 movementVector)
         {
-            // #idea Have a base InputControler class that listens for these key events and create a new Moveable(?) class that listens to the events and responds!
-            Vector3 moveVector = Vector3.zero;
-            if (Input.GetKeyDown(KeyCode.UpArrow))
+            if (this.IsCurrentlyMoving)
             {
-                moveVector.y = this.moveDelta;
+                return;
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
+
+            Vector3 movementDelta = movementVector * this.moveDelta;
+            this.startPosition = this.gameObject.transform.position;
+            if (CanMoveToNewPosition(this.originalPosition, movementDelta + this.startPosition, this.UnitMoveDistance))
             {
-                moveVector.y = -this.moveDelta;
+                this.endPosition = this.startPosition + movementDelta;
+                this.currentFrame = 0;
             }
-            else if (Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                moveVector.x = -this.moveDelta;
-            }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                moveVector.x = this.moveDelta;
-            }
-            return moveVector;
         }
+
+        private void OnPositionReset()
+        {
+            this.gameObject.transform.position = this.originalPosition;
+        }
+        #endregion  
     }
 }

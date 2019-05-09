@@ -55,7 +55,7 @@ namespace Core
                 for (int j = -moveDistance; j <= moveDistance; ++j)
                 {
                     Vector3 newPosition = origin + new Vector3(this.CurrentActor.MoveDelta * (float)i,
-                                                               this.CurrentActor.MoveDelta * (float)j, 0.0f);
+                                                               this.CurrentActor.MoveDelta * (float)j, -1.0f);
                     if (Movement.CanMoveToNewPosition(origin, newPosition, moveDistance))
                     {
                         GameObject moveMarker = GameObject.Instantiate(possibleMovementMarker, newPosition, Quaternion.identity, this.transform);
