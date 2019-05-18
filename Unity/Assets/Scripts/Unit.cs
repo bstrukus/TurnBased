@@ -10,7 +10,7 @@ namespace Core
     public class Unit : Entity
     {
         [SerializeField]
-        private Movement movement;
+        private Movement movement = null;
         public Movement Movement { get { return this.movement; } }
 
         private Coroutine attackCoroutine = null;

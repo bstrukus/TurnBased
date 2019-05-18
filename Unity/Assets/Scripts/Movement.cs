@@ -39,6 +39,15 @@ namespace Core
             // This logic should go into "start of unit's move turn", but this'll do for now
             this.originalPosition = this.transform.position;
             this.currentFrame = this.transitionFrames + 1;
+
+            Debug.Log($"Cell info of {this.gameObject.name}");
+            var gridRef = SystemsController.Instance.Battlefield.Grid;
+            Vector3Int worldToCell = gridRef.WorldToCell(this.transform.position);
+            Vector3 worldToLocal = gridRef.WorldToLocal(this.transform.position);
+            Vector3 cellCenterWorld = gridRef.GetCellCenterWorld(worldToCell);
+            Debug.Log($"WorldToCell: {worldToCell}");
+            Debug.Log($"WorldToLocal: {worldToLocal}");
+            Debug.Log($"CellCenterWorld: {cellCenterWorld}");
         }
         #endregion
 

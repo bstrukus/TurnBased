@@ -12,19 +12,19 @@ namespace Core
 
         #region Game Systems
         [SerializeField]
-        private InputController input;
+        private InputController input = null;
         public InputController Input { get { return this.input; } }
 
         [SerializeField]
-        private MovementVisualizer movementVisualizer;
+        private MovementVisualizer movementVisualizer = null;
         public MovementVisualizer MovementVisualizer { get { return this.movementVisualizer; } }
 
         [SerializeField]
-        private TurnManager turns;
+        private TurnManager turns = null;
         public TurnManager Turns { get { return this.turns; } }
 
         [SerializeField]
-        private Battlefield battleField;
+        private Battlefield battleField = null;
         public Battlefield Battlefield { get { return this.battleField; } }
 
         #endregion
