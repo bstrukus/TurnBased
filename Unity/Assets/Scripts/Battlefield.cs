@@ -3,6 +3,7 @@
  */
 
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 namespace Core
 {
@@ -15,27 +16,22 @@ namespace Core
         private Grid grid = null;
         public Grid Grid { get { return this.grid; } }
 
-        public Vector3 UpDown { get; private set; }
-        public Vector3 RightLeft { get; private set; }
+        [SerializeField]
+        private Tilemap tilemap = null;
+        public Tilemap Tilemap { get { return this.tilemap; } }
+
+        public Vector3 UpDown    { get { return new Vector3(0.5f,  0.25f); } }
+        public Vector3 RightLeft { get { return new Vector3(0.5f, -0.25f); } }
 
         #region MonoBehaviour
         private void Awake()
         {
             Debug.Assert(entities != null, "[Battlefield] No entities in the scene.");
-            
-
-            //this.UpDown
         }
 
         private void Start()
         {
-            PrintOutGridProperties();
-
-//                 Debug.Log("Printing out all of the Grid properties I'm interested in.");
-//                 Debug.Log($"Cell Size: {this.Battlefield.Grid.cellSize}");
-//                 Debug.Log($"Cell Gap: {this.Battlefield.Grid.cellGap}");
-//                 Debug.Log($"Cell Layout: {this.Battlefield.Grid.cellLayout}");
-//                 Debug.Log($"Cell Swizzle: {this.Battlefield.Grid.cellSwizzle}");
+            PrintGridProperties();
         }
         #endregion
 
@@ -49,20 +45,18 @@ namespace Core
             return null;
         }
 
-        private void PrintOutGridProperties()
+        private void PrintGridProperties()
         {
             string[] lines = {
-                "Grid Properties:",
-                "Foo",
-                "Bar"
+                "-------- GRID PROPERTIES --------",
+                $"Cell Size: {this.Grid.cellSize}",
+                $"Cell Gap: {this.Grid.cellGap}",
+                $"Cell Layout: {this.Grid.cellLayout}",
+                $"Cell Swizzle: {this.Grid.cellSwizzle}",
+                $"Layout Cell Center: {this.Grid.GetLayoutCellCenter()}",
             };
 
-            string gridProperties = "";
-            foreach (var line in lines)
-            {
-                gridProperties += line + "\n";
-            }
-            Debug.Log(gridProperties);
+            Logging.PrintLines(lines);
         }
     }
 }

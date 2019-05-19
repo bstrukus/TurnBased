@@ -40,14 +40,29 @@ namespace Core
             this.originalPosition = this.transform.position;
             this.currentFrame = this.transitionFrames + 1;
 
-            Debug.Log($"Cell info of {this.gameObject.name}");
             var gridRef = SystemsController.Instance.Battlefield.Grid;
             Vector3Int worldToCell = gridRef.WorldToCell(this.transform.position);
+            Vector3Int[] movementOptions =
+            {
+                worldToCell += Vector3Int.up,
+                worldToCell += Vector3Int.down,
+                worldToCell += Vector3Int.right,
+                worldToCell += Vector3Int.left,
+            };
             Vector3 worldToLocal = gridRef.WorldToLocal(this.transform.position);
             Vector3 cellCenterWorld = gridRef.GetCellCenterWorld(worldToCell);
-            Debug.Log($"WorldToCell: {worldToCell}");
-            Debug.Log($"WorldToLocal: {worldToLocal}");
-            Debug.Log($"CellCenterWorld: {cellCenterWorld}");
+            string[] movementLogs =
+            {
+                $"Cell info of {this.gameObject.name}",
+                $"WorldToCell: {worldToCell}",
+                $"WorldToLocal: {worldToLocal}",
+                $"CellCenterWorld: {cellCenterWorld}",
+                $"UP: {gridRef.CellToWorld(movementOptions[0])}",
+                $"DOWN: {gridRef.CellToWorld(movementOptions[1])}",
+                $"RIGHT: {gridRef.CellToWorld(movementOptions[2])}",
+                $"LEFT: {gridRef.CellToWorld(movementOptions[3])}",
+            };
+            Logging.PrintLines(movementLogs);
         }
         #endregion
 
@@ -82,7 +97,6 @@ namespace Core
             }
             this.moveCoroutine = null;
         }
-
 
         #region Event Handlers
         private void OnMovementTriggered(Vector3 movementVector)
