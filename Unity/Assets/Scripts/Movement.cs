@@ -68,8 +68,18 @@ namespace Core
 
         public static bool CanMoveToNewPosition(Vector3 origin, Vector3 newPosition, int maxMoveDistance)
         {
-            Vector3 positionDelta = newPosition - origin;
+            Vector3Int originCellPosition = SystemsController.Instance.Battlefield.Grid.WorldToCell(origin);
+            Vector3Int newCellPosition = SystemsController.Instance.Battlefield.Grid.WorldToCell(newPosition);
+            Vector3Int positionDelta = newCellPosition - originCellPosition;
             int movesFromOriginalPosition = (int)Mathf.Abs(positionDelta.x) + (int)Mathf.Abs(positionDelta.y);
+
+            string[] moveLogs = {
+                $"Origin = {originCellPosition}",
+                $"New = {newCellPosition}," +
+                $"Delta = {positionDelta}"
+            };
+            Logging.PrintLines(moveLogs);
+
             return movesFromOriginalPosition <= maxMoveDistance;
         }
 

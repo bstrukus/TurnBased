@@ -23,6 +23,9 @@ namespace Core
         [SerializeField]
         private GameObject possibleMovementMarker = null;
 
+        [SerializeField]
+        private Vector3 movementOffset = Vector3.zero;
+
         private List<GameObject> currentMarkers = null;
 
         #region MonoBehaviour
@@ -34,6 +37,9 @@ namespace Core
         private void Start()
         {
             SystemsController.Instance.Turns.TurnStarted += OnTurnStarted;
+
+            float cellHeight = SystemsController.Instance.Battlefield.Grid.cellSize.y;
+            movementOffset = new Vector3(0, cellHeight / 2.0f);
         }
         #endregion
 
@@ -46,16 +52,26 @@ namespace Core
         }
         #endregion
 
+        [ContextMenu("Recalculate visuals")]
+        private void RecalcVisuals()
+        {
+            ClearExistingMoveMarkers();
+            UpdateVisuals();
+        }
+
         private void UpdateVisuals()
         {
             int moveDistance = this.CurrentActor.UnitMoveDistance;
-            Vector3 origin = this.CurrentActor.transform.position;
+            Vector3[] axes = { SystemsController.Instance.Battlefield.RightLeft,
+                               SystemsController.Instance.Battlefield.UpDown };
+            Vector3 origin = this.CurrentActor.transform.position - this.movementOffset;
             for (int i = -moveDistance; i <= moveDistance; ++i)
             {
                 for (int j = -moveDistance; j <= moveDistance; ++j)
                 {
-                    Vector3 newPosition = origin + new Vector3(this.CurrentActor.MoveDelta * (float)i,
-                                                               this.CurrentActor.MoveDelta * (float)j, -1.0f);
+                    Vector3 newPosition = origin + (axes[0] * this.CurrentActor.MoveDelta * (float)i)
+                                                 + (axes[1] * this.CurrentActor.MoveDelta * (float)j);
+
                     if (Movement.CanMoveToNewPosition(origin, newPosition, moveDistance))
                     {
                         GameObject moveMarker = GameObject.Instantiate(possibleMovementMarker, newPosition, Quaternion.identity, this.transform);
