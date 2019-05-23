@@ -7,10 +7,10 @@ using UnityEngine;
 
 namespace Core
 {
-    public class Unit : MonoBehaviour
+    public class Unit : Entity
     {
         [SerializeField]
-        private Movement movement;
+        private Movement movement = null;
         public Movement Movement { get { return this.movement; } }
 
         private Coroutine attackCoroutine = null;
@@ -19,6 +19,20 @@ namespace Core
         private void Awake()
         {
             Debug.Assert(this.movement != null, "[Unit] Missing reference to Movement.");
+        }
+        #endregion
+
+        #region Entity
+        public override bool CanPerformAction(ActionType actionType)
+        {
+            switch (actionType)
+            {
+                case ActionType.Attack:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
         #endregion
 

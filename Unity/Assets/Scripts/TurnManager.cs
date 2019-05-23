@@ -10,7 +10,7 @@ namespace Core
     public class TurnManager : MonoBehaviour
     {
         [SerializeField]
-        private Unit[] units;
+        private Unit[] units = null;
 
         public Action<Unit> TurnStarted;        // Parameters(newUnit)
         public Action<Unit> TurnEnded;          // Parameters(oldUnit)

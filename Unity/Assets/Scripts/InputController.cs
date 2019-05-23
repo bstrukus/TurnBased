@@ -37,19 +37,19 @@ namespace Core
             Vector3 movementVector = Vector3.zero;
             if (Input.GetKeyDown(KeyCode.UpArrow))
             {
-                movementVector = Vector3.up;
+                movementVector = SystemsController.Instance.Battlefield.UpDown;
             }
             else if (Input.GetKeyDown(KeyCode.DownArrow))
             {
-                movementVector = Vector3.down;
+                movementVector = -SystemsController.Instance.Battlefield.UpDown;
             }
             else if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
-                movementVector = Vector3.left;
+                movementVector = -SystemsController.Instance.Battlefield.RightLeft;
             }
             else if (Input.GetKeyDown(KeyCode.RightArrow))
             {
-                movementVector = Vector3.right;
+                movementVector = SystemsController.Instance.Battlefield.RightLeft;
             }
 
             if (movementVector != Vector3.zero)
