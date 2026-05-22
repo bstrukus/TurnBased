@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Tactics
 {
-    public enum CellHighlight { None, Move, Attack, Selected }
+    public enum CellHighlight { None, Move, Attack, Selected, Hover }
 
     public class GridSystem : MonoBehaviour
     {
@@ -19,6 +19,7 @@ namespace Tactics
         [SerializeField] private Material moveMat;
         [SerializeField] private Material attackMat;
         [SerializeField] private Material selectedMat;
+        [SerializeField] private Material hoverMat;
 
         private GridCell[,] cells = new GridCell[Width, Depth];
 
@@ -49,6 +50,7 @@ namespace Tactics
             if (moveMat     == null) moveMat     = CreateMat(new Color(0.25f, 0.55f, 1.00f, 0.8f));
             if (attackMat   == null) attackMat   = CreateMat(new Color(1.00f, 0.25f, 0.25f, 0.8f));
             if (selectedMat == null) selectedMat = CreateMat(new Color(1.00f, 0.90f, 0.20f, 0.9f));
+            if (hoverMat    == null) hoverMat    = CreateMat(new Color(0.90f, 0.90f, 0.90f, 0.7f));
         }
 
         private Material CreateMat(Color color)
@@ -109,6 +111,7 @@ namespace Tactics
                 CellHighlight.Move     => moveMat,
                 CellHighlight.Attack   => attackMat,
                 CellHighlight.Selected => selectedMat,
+                CellHighlight.Hover    => hoverMat,
                 _                      => defaultMat,
             };
         }

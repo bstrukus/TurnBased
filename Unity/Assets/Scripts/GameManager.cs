@@ -25,6 +25,7 @@ namespace Tactics
         [SerializeField] private TurnManager turnManager;
         [SerializeField] private ActionMenuUI actionMenu;
         [SerializeField] private CameraController cameraController;
+        [SerializeField] private Camera mainCamera; // assign in Inspector; falls back to Camera.main
 
         [Header("Unit prefabs")]
         [SerializeField] private GameObject unitPrefab;
@@ -38,7 +39,15 @@ namespace Tactics
 
         public GameState State { get; private set; } = GameState.Setup;
 
+        // Resolves to the serialized camera, or Camera.main as a fallback.
+        private Camera ActiveCamera => mainCamera != null ? mainCamera : Camera.main;
+
         private HashSet<GridCell> highlightedCells = new HashSet<GridCell>();
+
+        // Hover state — tracks whichever cell is under the cursor so we can
+        // restore its original highlight when the mouse moves away.
+        private GridCell hoveredCell = null;
+        private CellHighlight currentSelectionHighlight = CellHighlight.None;
 
         // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -191,8 +200,13 @@ namespace Tactics
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
                 CancelTargetSelection();
 
-            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
-                HandleClickRaycast(mouse.position.ReadValue());
+            if (mouse != null)
+            {
+                Vector2 mousePos = mouse.position.ReadValue();
+                if (mouse.leftButton.wasPressedThisFrame)
+                    HandleClickRaycast(mousePos);
+                HandleHoverRaycast(mousePos);
+            }
         }
 
         private void HandleClickRaycast(Vector2 screenPos)
@@ -201,13 +215,85 @@ namespace Tactics
             // RaycastAll asks the GraphicRaycaster directly what the pointer hit.
             if (IsPointerOverUI(screenPos)) return;
 
-            if (Camera.main == null) return;
-            Ray ray = Camera.main.ScreenPointToRay(screenPos);
+            var cam = ActiveCamera;
+            if (cam == null) return;
+            Ray ray = cam.ScreenPointToRay(screenPos);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 var selector = hit.collider.GetComponent<CellSelector>();
                 if (selector != null) OnCellClicked(selector.Cell);
             }
+        }
+
+        // ── Hover highlight ───────────────────────────────────────────────────────
+
+        private void HandleHoverRaycast(Vector2 screenPos)
+        {
+            // Only show hover feedback while the player is picking a target
+            bool inSelectionState = State == GameState.SelectingMoveTarget
+                                 || State == GameState.SelectingAttackTarget
+                                 || State == GameState.SelectingItemTarget;
+
+            if (!inSelectionState)
+            {
+                ClearHover();
+                return;
+            }
+
+            var cam = ActiveCamera;
+            if (cam == null)
+            {
+                Debug.LogWarning("[GameManager] ActiveCamera is null — assign Main Camera in the Inspector.");
+                ClearHover();
+                return;
+            }
+
+            if (IsPointerOverUI(screenPos))
+            {
+                ClearHover();
+                return;
+            }
+
+            Ray ray = cam.ScreenPointToRay(screenPos);
+
+            // Visible in Scene view during Play mode: cyan = hit, red = miss
+            bool didHit = Physics.Raycast(ray, out RaycastHit hit);
+            Debug.DrawRay(ray.origin, ray.direction * 60f, didHit ? Color.cyan : Color.red);
+
+            GridCell newHover = null;
+            if (didHit)
+            {
+                var sel = hit.collider.GetComponent<CellSelector>();
+                if (sel != null)
+                    newHover = sel.Cell;
+                else
+                    Debug.Log($"[GameManager] Ray hit '{hit.collider.gameObject.name}' but no CellSelector found.");
+            }
+
+            if (newHover == hoveredCell) return; // same cell — nothing to do
+
+            ClearHover();
+
+            if (newHover != null)
+            {
+                hoveredCell = newHover;
+                gridSystem.SetHighlight(hoveredCell, CellHighlight.Hover);
+            }
+        }
+
+        // Restore whatever the hovered cell's highlight should actually be.
+        private void ClearHover()
+        {
+            if (hoveredCell == null) return;
+
+            CellHighlight restore = CellHighlight.None;
+            if (hoveredCell == turnManager.ActiveUnit?.CurrentCell)
+                restore = CellHighlight.Selected;
+            else if (highlightedCells.Contains(hoveredCell))
+                restore = currentSelectionHighlight;
+
+            gridSystem.SetHighlight(hoveredCell, restore);
+            hoveredCell = null;
         }
 
         private bool IsPointerOverUI(Vector2 screenPos)
@@ -218,7 +304,13 @@ namespace Tactics
             var pointerData = new UnityEngine.EventSystems.PointerEventData(es) { position = screenPos };
             var results = new List<UnityEngine.EventSystems.RaycastResult>();
             es.RaycastAll(pointerData, results);
-            return results.Count > 0;
+
+            // Only treat a hit as "UI" if it came from a GraphicRaycaster (canvas element).
+            // PhysicsRaycaster results — if any camera has one — must not block world clicks.
+            foreach (var r in results)
+                if (r.module is UnityEngine.UI.GraphicRaycaster)
+                    return true;
+            return false;
         }
 
         private void CancelTargetSelection()
@@ -239,6 +331,7 @@ namespace Tactics
         {
             actionMenu.Hide();
             ClearHighlights();
+            currentSelectionHighlight = CellHighlight.Move;
             var reachable = Pathfinder.GetReachableCells(
                 unit.CurrentCell, unit.stats.move, unit.stats.jump, gridSystem);
             ShowHighlights(reachable, CellHighlight.Move);
@@ -270,6 +363,7 @@ namespace Tactics
         {
             actionMenu.Hide();
             ClearHighlights();
+            currentSelectionHighlight = CellHighlight.Attack;
             var range = Pathfinder.GetAttackableCells(
                 unit.CurrentCell, 1, unit.stats.attackRange, gridSystem);
             // Only highlight cells that actually have an enemy on them
@@ -311,6 +405,7 @@ namespace Tactics
         {
             actionMenu.Hide();
             ClearHighlights();
+            currentSelectionHighlight = CellHighlight.Move;
             // Items can target self + adjacent allies
             var range = Pathfinder.GetAttackableCells(unit.CurrentCell, 0, 1, gridSystem);
             range.Add(unit.CurrentCell);
@@ -447,6 +542,7 @@ namespace Tactics
 
         private void ClearHighlights()
         {
+            hoveredCell = null; // prevent ClearHover from restoring a stale highlight
             gridSystem.ClearAllHighlights();
             if (turnManager.ActiveUnit?.CurrentCell != null)
                 gridSystem.SetHighlight(turnManager.ActiveUnit.CurrentCell, CellHighlight.Selected);

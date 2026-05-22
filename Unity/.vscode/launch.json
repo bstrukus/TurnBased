@@ -2,19 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Unity Editor",
-            "type": "unity",
-            "path": "${workspaceFolder}/Library/EditorInstance.json",
-            "request": "launch"
-        },
-        {
-            "name": "Unity Player",
-            "type": "unity",
-            "path": "${workspaceFolder}/Library/LastSceneManagerSetup.txt",
-            "request": "launch"
-        },
-        {
-            "name": "Attach to Unity",
+            "name": "Attach to Unity Editor",
             "type": "vstuc",
             "request": "attach"
         }
