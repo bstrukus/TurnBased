@@ -41,7 +41,7 @@ namespace Tactics
 
             // Buttons need an EventSystem in the scene to receive clicks.
             // Create one automatically if the scene doesn't already have it.
-            if (FindFirstObjectByType<EventSystem>() == null)
+            if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var es = new GameObject("EventSystem");
                 es.AddComponent<EventSystem>();
