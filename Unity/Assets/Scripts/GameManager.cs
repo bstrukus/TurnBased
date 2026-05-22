@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Tactics
 {
@@ -184,8 +185,25 @@ namespace Tactics
         // Cancel target-selection and return to the action menu
         private void Update()
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+            var keyboard = Keyboard.current;
+            var mouse    = Mouse.current;
+
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
                 CancelTargetSelection();
+
+            if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                HandleClickRaycast(mouse.position.ReadValue());
+        }
+
+        private void HandleClickRaycast(Vector2 screenPos)
+        {
+            if (Camera.main == null) return;
+            Ray ray = Camera.main.ScreenPointToRay(screenPos);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                var selector = hit.collider.GetComponent<CellSelector>();
+                if (selector != null) OnCellClicked(selector.Cell);
+            }
         }
 
         private void CancelTargetSelection()

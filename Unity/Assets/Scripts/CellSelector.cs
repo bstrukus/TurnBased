@@ -2,18 +2,13 @@ using UnityEngine;
 
 namespace Tactics
 {
-    // Attached to each cell GameObject at runtime; forwards OnMouseDown to GameManager.
+    // Attached to each cell GameObject at runtime.
+    // Exposes the GridCell so GameManager can identify it via raycast hit.
     [RequireComponent(typeof(Collider))]
     public class CellSelector : MonoBehaviour
     {
-        private GridCell cell;
+        public GridCell Cell { get; private set; }
 
-        public void Initialize(GridCell c) => cell = c;
-
-        private void OnMouseDown()
-        {
-            if (GameManager.Instance != null)
-                GameManager.Instance.OnCellClicked(cell);
-        }
+        public void Initialize(GridCell cell) => Cell = cell;
     }
 }

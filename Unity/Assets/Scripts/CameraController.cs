@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Tactics
 {
@@ -25,15 +26,14 @@ namespace Tactics
 
         public Mode CurrentMode { get; private set; } = Mode.Orbit;
 
-        private float orbitYaw = 225f;          // initial angle: camera south-west of grid
+        private float orbitYaw = 225f;      // initial angle: camera south-west of grid
         private float targetOrbitYaw = 225f;
         private float freeYaw;
         private float freePitch;
-        private Vector3 lastMousePos;
+        private Vector2 lastMousePos;
 
         private void Start()
         {
-            // Sync free-mode angles to the current camera orientation
             freeYaw   = transform.eulerAngles.y;
             freePitch = transform.eulerAngles.x;
             ApplyOrbit(snap: true);
@@ -41,11 +41,15 @@ namespace Tactics
 
         private void Update()
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Tab))
+            var keyboard = Keyboard.current;
+            var mouse    = Mouse.current;
+            if (keyboard == null || mouse == null) return;
+
+            if (keyboard.tabKey.wasPressedThisFrame)
                 ToggleMode();
 
-            if (CurrentMode == Mode.Orbit) UpdateOrbit();
-            else UpdateFree();
+            if (CurrentMode == Mode.Orbit) UpdateOrbit(keyboard, mouse);
+            else                           UpdateFree(keyboard, mouse);
         }
 
         private void ToggleMode()
@@ -60,23 +64,23 @@ namespace Tactics
 
         // ── Orbit ────────────────────────────────────────────────────────────────
 
-        private void UpdateOrbit()
+        private void UpdateOrbit(Keyboard kb, Mouse mouse)
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Q)) targetOrbitYaw -= 90f;
-            if (UnityEngine.Input.GetKeyDown(KeyCode.E)) targetOrbitYaw += 90f;
+            if (kb.qKey.wasPressedThisFrame) targetOrbitYaw -= 90f;
+            if (kb.eKey.wasPressedThisFrame) targetOrbitYaw += 90f;
 
             orbitYaw = Mathf.LerpAngle(orbitYaw, targetOrbitYaw,
                 Time.deltaTime * orbitRotateSpeed);
 
-            orbitDistance -= UnityEngine.Input.mouseScrollDelta.y * scrollSpeed;
-            orbitDistance = Mathf.Clamp(orbitDistance, 8f, 45f);
+            orbitDistance -= mouse.scroll.ReadValue().y * scrollSpeed;
+            orbitDistance  = Mathf.Clamp(orbitDistance, 8f, 45f);
 
             ApplyOrbit(snap: false);
         }
 
         private void ApplyOrbit(bool snap)
         {
-            float yaw   = snap ? targetOrbitYaw : orbitYaw;
+            float      yaw = snap ? targetOrbitYaw : orbitYaw;
             Quaternion rot = Quaternion.Euler(orbitPitch, yaw, 0f);
             transform.position = focusPoint + rot * new Vector3(0f, 0f, -orbitDistance);
             transform.LookAt(focusPoint);
@@ -84,35 +88,34 @@ namespace Tactics
 
         // ── Free ─────────────────────────────────────────────────────────────────
 
-        private void UpdateFree()
+        private void UpdateFree(Keyboard kb, Mouse mouse)
         {
             // Right-mouse drag → look around
-            if (UnityEngine.Input.GetMouseButtonDown(1))
-                lastMousePos = UnityEngine.Input.mousePosition;
+            if (mouse.rightButton.wasPressedThisFrame)
+                lastMousePos = mouse.position.ReadValue();
 
-            if (UnityEngine.Input.GetMouseButton(1))
+            if (mouse.rightButton.isPressed)
             {
-                Vector3 delta = UnityEngine.Input.mousePosition - lastMousePos;
+                Vector2 delta = mouse.position.ReadValue() - lastMousePos;
                 freeYaw   += delta.x * freeLookSpeed * Time.deltaTime;
                 freePitch -= delta.y * freeLookSpeed * Time.deltaTime;
                 freePitch  = Mathf.Clamp(freePitch, -80f, 80f);
-                lastMousePos = UnityEngine.Input.mousePosition;
+                lastMousePos = mouse.position.ReadValue();
             }
 
             transform.rotation = Quaternion.Euler(freePitch, freeYaw, 0f);
 
             // WASD pan in the camera's horizontal plane
-            float h = UnityEngine.Input.GetAxis("Horizontal");
-            float v = UnityEngine.Input.GetAxis("Vertical");
+            float h = (kb.dKey.isPressed ? 1f : 0f) - (kb.aKey.isPressed ? 1f : 0f);
+            float v = (kb.wKey.isPressed ? 1f : 0f) - (kb.sKey.isPressed ? 1f : 0f);
             Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
             Vector3 right   = Vector3.ProjectOnPlane(transform.right,   Vector3.up).normalized;
             transform.position += (forward * v + right * h) * panSpeed * Time.deltaTime;
 
-            // Scroll = move forward/back
-            float scroll = UnityEngine.Input.mouseScrollDelta.y;
-            transform.position += transform.forward * scroll * scrollSpeed;
+            // Scroll → dolly
+            transform.position += transform.forward * mouse.scroll.ReadValue().y * scrollSpeed;
 
-            // Update focus point to follow free camera (keeps orbit re-entry sane)
+            // Keep focus point in sync for clean orbit re-entry
             focusPoint = transform.position + transform.forward * orbitDistance;
         }
 
