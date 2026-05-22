@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace Tactics
 {
@@ -32,14 +33,25 @@ namespace Tactics
 
             // Always enforce screen-space overlay — if the Canvas was added via
             // the Editor it may have been left on a different render mode.
-            canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
+            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
 
-            if (moveButton    == null) moveButton    = CreateButton("Move",     new Vector2(-160, -160));
-            if (attackButton  == null) attackButton  = CreateButton("Attack",   new Vector2(-53,  -160));
-            if (itemButton    == null) itemButton    = CreateButton("Item",     new Vector2( 53,  -160));
-            if (defendButton  == null) defendButton  = CreateButton("Defend",   new Vector2( 160, -160));
-            if (endTurnButton == null) endTurnButton = CreateButton("End Turn", new Vector2( 0,   -220));
+            // Buttons need an EventSystem in the scene to receive clicks.
+            // Create one automatically if the scene doesn't already have it.
+            if (FindFirstObjectByType<EventSystem>() == null)
+            {
+                var es = new GameObject("EventSystem");
+                es.AddComponent<EventSystem>();
+                es.AddComponent<StandaloneInputModule>();
+            }
+
+            // Anchor is bottom-centre (0.5, 0), pivot is bottom-centre (0.5, 0).
+            // Positive Y = pixels above the bottom edge of the screen.
+            if (moveButton    == null) moveButton    = CreateButton("Move",     new Vector2(-165, 60));
+            if (attackButton  == null) attackButton  = CreateButton("Attack",   new Vector2( -55, 60));
+            if (itemButton    == null) itemButton    = CreateButton("Item",     new Vector2(  55, 60));
+            if (defendButton  == null) defendButton  = CreateButton("Defend",   new Vector2( 165, 60));
+            if (endTurnButton == null) endTurnButton = CreateButton("End Turn", new Vector2(   0, 10));
 
             if (turnOrderText == null)
             {
