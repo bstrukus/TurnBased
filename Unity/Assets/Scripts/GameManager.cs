@@ -197,6 +197,12 @@ namespace Tactics
 
         private void HandleClickRaycast(Vector2 screenPos)
         {
+            // Don't raycast into the world when the pointer is over a UI element —
+            // otherwise clicks on action buttons also hit grid cells underneath.
+            if (UnityEngine.EventSystems.EventSystem.current != null
+                && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                return;
+
             if (Camera.main == null) return;
             Ray ray = Camera.main.ScreenPointToRay(screenPos);
             if (Physics.Raycast(ray, out RaycastHit hit))

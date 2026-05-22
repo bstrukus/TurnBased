@@ -26,11 +26,13 @@ namespace Tactics
         {
             canvas = GetComponent<Canvas>();
             if (canvas == null)
-            {
                 canvas = gameObject.AddComponent<Canvas>();
+
+            // Ensure these are always present regardless of how the Canvas was created
+            if (GetComponent<CanvasScaler>() == null)
                 gameObject.AddComponent<CanvasScaler>();
+            if (GetComponent<GraphicRaycaster>() == null)
                 gameObject.AddComponent<GraphicRaycaster>();
-            }
 
             // Always enforce screen-space overlay — if the Canvas was added via
             // the Editor it may have been left on a different render mode.
