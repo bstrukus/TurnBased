@@ -28,8 +28,8 @@ Unity/.vs/
 # Unity user-specific editor preferences (window layouts, personal settings)
 Unity/UserSettings/
 
-# Auto-generated solution files (.sln already covered above, .slnx is the newer XML format)
-Unity/*.slnx
+# .sln is auto-generated with absolute paths — keep ignored
+# .slnx only contains relative paths so it IS committed (see Unity/Unity.slnx)
 
 # Visual Studio component manifest (not used with VS Code)
 Unity/.vsconfig
