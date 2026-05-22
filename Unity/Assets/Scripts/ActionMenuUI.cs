@@ -26,11 +26,14 @@ namespace Tactics
             if (canvas == null)
             {
                 canvas = gameObject.AddComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = 10;
                 gameObject.AddComponent<CanvasScaler>();
                 gameObject.AddComponent<GraphicRaycaster>();
             }
+
+            // Always enforce screen-space overlay — if the Canvas was added via
+            // the Editor it may have been left on a different render mode.
+            canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 10;
 
             if (moveButton    == null) moveButton    = CreateButton("Move",     new Vector2(-160, -160));
             if (attackButton  == null) attackButton  = CreateButton("Attack",   new Vector2(-53,  -160));
