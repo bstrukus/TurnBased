@@ -197,11 +197,9 @@ namespace Tactics
 
         private void HandleClickRaycast(Vector2 screenPos)
         {
-            // Don't raycast into the world when the pointer is over a UI element —
-            // otherwise clicks on action buttons also hit grid cells underneath.
-            if (UnityEngine.EventSystems.EventSystem.current != null
-                && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                return;
+            // IsPointerOverGameObject() is unreliable with the new Input System.
+            // RaycastAll asks the GraphicRaycaster directly what the pointer hit.
+            if (IsPointerOverUI(screenPos)) return;
 
             if (Camera.main == null) return;
             Ray ray = Camera.main.ScreenPointToRay(screenPos);
@@ -210,6 +208,17 @@ namespace Tactics
                 var selector = hit.collider.GetComponent<CellSelector>();
                 if (selector != null) OnCellClicked(selector.Cell);
             }
+        }
+
+        private bool IsPointerOverUI(Vector2 screenPos)
+        {
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            if (es == null) return false;
+
+            var pointerData = new UnityEngine.EventSystems.PointerEventData(es) { position = screenPos };
+            var results = new List<UnityEngine.EventSystems.RaycastResult>();
+            es.RaycastAll(pointerData, results);
+            return results.Count > 0;
         }
 
         private void CancelTargetSelection()
