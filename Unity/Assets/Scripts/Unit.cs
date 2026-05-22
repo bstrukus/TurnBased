@@ -1,89 +1,94 @@
-﻿/*
- * Ben's TurnBased Strategy Game
- */
-
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
-namespace Core
+namespace Tactics
 {
-    public class Unit : Entity
+    public class Unit : MonoBehaviour
     {
-        [SerializeField]
-        private Movement movement = null;
-        public Movement Movement { get { return this.movement; } }
+        [SerializeField] public UnitStats stats = new UnitStats();
+        [SerializeField] public int teamIndex = 0; // 0 = player, 1 = enemy
 
-        private Coroutine attackCoroutine = null;
+        public int CT { get; private set; } = 0;
+        public GridCell CurrentCell { get; private set; }
+        public bool HasMoved { get; private set; }
+        public bool HasActed { get; private set; }
+        public bool IsAlive => !stats.IsDead;
 
-        #region MonoBehaviour
         private void Awake()
         {
-            Debug.Assert(this.movement != null, "[Unit] Missing reference to Movement.");
+            stats.Initialize();
         }
-        #endregion
 
-        #region Entity
-        public override bool CanPerformAction(ActionType actionType)
+        public void SetInitialCT(int value) => CT = value;
+
+        public void PlaceOnCell(GridCell cell)
         {
-            switch (actionType)
-            {
-                case ActionType.Attack:
-                    return true;
-
-                default:
-                    return false;
-            }
+            if (CurrentCell != null)
+                CurrentCell.Occupant = null;
+            CurrentCell = cell;
+            cell.Occupant = this;
+            transform.position = cell.SurfacePosition + Vector3.up * 0.5f;
         }
-        #endregion
+
+        public void AdvanceCT() => CT += stats.speed;
+
+        public bool IsReady => CT >= 100;
 
         public void StartTurn()
         {
-            Debug.LogFormat("[{0}] Turn Started", gameObject.name);
-            this.Movement.StartTurn();
-
-            SystemsController.Instance.Input.TurnEnd += OnTurnEnd;
-            SystemsController.Instance.Input.ActionTriggered += OnActionTriggered;
+            CT -= 100;
+            HasMoved = false;
+            HasActed = false;
+            stats.isDefending = false;
         }
 
-        public void EndTurn()
+        public void SetMoved() => HasMoved = true;
+        public void SetActed() => HasActed = true;
+
+        public bool CanStillAct() => !HasActed;
+        public bool CanStillMove() => !HasMoved;
+
+        public IEnumerator AnimateMoveTo(GridCell targetCell)
         {
-            Debug.LogFormat("[{0}] Turn Ended", gameObject.name);
-            this.Movement.EndTurn();
+            Vector3 start = transform.position;
+            Vector3 end = targetCell.SurfacePosition + Vector3.up * 0.5f;
+            float duration = 0.25f;
+            float elapsed = 0f;
 
-            SystemsController.Instance.Turns.EndTurn(this);
+            if (CurrentCell != null) CurrentCell.Occupant = null;
+            CurrentCell = targetCell;
+            targetCell.Occupant = this;
 
-            SystemsController.Instance.Input.TurnEnd -= OnTurnEnd;
-            SystemsController.Instance.Input.ActionTriggered -= OnActionTriggered;
-        }
-
-        private IEnumerator Attack()
-        {
-            int steps = 15;
-            float fullRotation = 360.0f;
-            float rotationChunks = fullRotation / (float)steps;
-
-            for (int i = 0; i < steps; ++i)
+            while (elapsed < duration)
             {
-                this.transform.Rotate(Vector3.forward, rotationChunks);
+                transform.position = Vector3.Lerp(start, end, elapsed / duration);
+                elapsed += Time.deltaTime;
                 yield return null;
             }
-            this.attackCoroutine = null;
+            transform.position = end;
         }
 
-        #region Event Handlers
-        private void OnTurnEnd()
+        public IEnumerator AnimateAttack(Unit target)
         {
-            EndTurn();
-        }
+            Vector3 origin = transform.position;
+            Vector3 toward = (target.transform.position - origin).normalized * 0.4f;
+            float half = 0.12f;
 
-        private void OnActionTriggered()
-        {
-            Debug.Log($"[Unit] Action triggered for '{this.gameObject.name}'");
-            if (this.attackCoroutine == null)
+            float elapsed = 0f;
+            while (elapsed < half)
             {
-                this.attackCoroutine = StartCoroutine(Attack());
+                transform.position = Vector3.Lerp(origin, origin + toward, elapsed / half);
+                elapsed += Time.deltaTime;
+                yield return null;
             }
+            elapsed = 0f;
+            while (elapsed < half)
+            {
+                transform.position = Vector3.Lerp(origin + toward, origin, elapsed / half);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            transform.position = origin;
         }
-        #endregion
     }
 }

@@ -1,69 +1,104 @@
-﻿/*
- * Ben's TurnBased Strategy Game
- */
-
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace Core
+namespace Tactics
 {
     public class TurnManager : MonoBehaviour
     {
-        [SerializeField]
-        private Unit[] units = null;
+        public event Action<Unit> TurnStarted;
+        public event Action<Unit> TurnEnded;
 
-        public Action<Unit> TurnStarted;        // Parameters(newUnit)
-        public Action<Unit> TurnEnded;          // Parameters(oldUnit)
-        public Action<int> NewCycleStarted;     // Parameters(newCycleNumber)
+        public Unit ActiveUnit { get; private set; }
 
-        private int currentTurn;        // Keeps track of current turn this cycle
-        private int totalTurns;         // Keeps track of total turns taken thus far
-        private int totalTurnCycles;    // Keeps track of total cycles (full run-through of Units)
+        private List<Unit> units = new List<Unit>();
 
-        private Unit CurrentUnit { get { return this.units[this.currentTurn]; } }
-
-        #region MonoBehaviour
-        private void Awake()
+        public void RegisterUnits(List<Unit> allUnits)
         {
-            Debug.Assert(units.Length > 0, "[TurnManager] No Units exist!");
-            this.currentTurn = 0;
-            this.totalTurns = 0;
-            this.totalTurnCycles = 0;
+            units = new List<Unit>(allUnits);
+
+            // Stagger starting CT so units spread out on the first cycle
+            for (int i = 0; i < units.Count; i++)
+                units[i].SetInitialCT(i * (100 / Mathf.Max(1, units.Count)));
         }
 
-        private void Start()
+        // Advance time until the next unit is ready, then start its turn.
+        public void AdvanceToNextTurn()
         {
-            StartTurn();
-        }
-        #endregion
-
-        public void EndTurn(Unit unit)
-        {
-            TurnEnded?.Invoke(this.CurrentUnit);
-            NextTurn();
-        }
-
-        private void StartTurn()
-        {
-            this.CurrentUnit.StartTurn();
-            TurnStarted?.Invoke(this.CurrentUnit);
-        }
-
-        private void NextTurn()
-        {
-            Debug.Log("[TurnManager] NextTurn : Called");
-            ++this.currentTurn;
-            ++this.totalTurns;
-            if (this.currentTurn >= units.Length)
+            if (ActiveUnit != null)
             {
-                this.currentTurn = 0;
-                ++this.totalTurnCycles;
-
-                NewCycleStarted?.Invoke(this.totalTurnCycles);
-                Debug.Log("[TurnManager] NextTurn : New cycle started");
+                TurnEnded?.Invoke(ActiveUnit);
+                ActiveUnit = null;
             }
 
-            StartTurn();
+            RemoveDeadUnits();
+
+            while (ActiveUnit == null)
+            {
+                Unit candidate = GetHighestReadyUnit();
+                if (candidate != null)
+                {
+                    ActiveUnit = candidate;
+                    ActiveUnit.StartTurn();
+                    TurnStarted?.Invoke(ActiveUnit);
+                }
+                else
+                {
+                    foreach (var u in units) u.AdvanceCT();
+                }
+            }
+        }
+
+        // Returns a list simulating upcoming turn order (for UI display).
+        // Does NOT modify actual CT values.
+        public List<Unit> PredictTurnOrder(int count = 6)
+        {
+            var simCT = new Dictionary<Unit, int>();
+            foreach (var u in units) simCT[u] = u.CT;
+
+            var order = new List<Unit>();
+            int safety = 0;
+            while (order.Count < count && safety++ < 500)
+            {
+                Unit best = null;
+                foreach (var u in units)
+                {
+                    if (simCT[u] >= 100)
+                    {
+                        if (best == null || simCT[u] > simCT[best]) best = u;
+                    }
+                }
+                if (best != null)
+                {
+                    order.Add(best);
+                    simCT[best] -= 100;
+                }
+                else
+                {
+                    foreach (var u in units) simCT[u] += u.stats.speed;
+                }
+            }
+            return order;
+        }
+
+        public List<Unit> GetAllUnits() => new List<Unit>(units);
+
+        public bool IsPlayerTurn => ActiveUnit != null && ActiveUnit.teamIndex == 0;
+
+        private Unit GetHighestReadyUnit()
+        {
+            Unit best = null;
+            foreach (var u in units)
+            {
+                if (!u.IsReady || !u.IsAlive) continue;
+                if (best == null || u.CT > best.CT) best = u;
+            }
+            return best;
+        }
+
+        private void RemoveDeadUnits()
+        {
+            units.RemoveAll(u => u == null || !u.IsAlive);
         }
     }
 }
