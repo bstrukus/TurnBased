@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 
 namespace Tactics
 {
@@ -42,7 +43,7 @@ namespace Tactics
             {
                 var es = new GameObject("EventSystem");
                 es.AddComponent<EventSystem>();
-                es.AddComponent<StandaloneInputModule>();
+                es.AddComponent<InputSystemUIInputModule>();
             }
 
             // Anchor is bottom-centre (0.5, 0), pivot is bottom-centre (0.5, 0).
